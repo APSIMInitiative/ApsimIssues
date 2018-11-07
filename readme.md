@@ -1,0 +1,1 @@
+# Gets the number of [ApsimX](https://github.com/APSIMInitiative/ApsimX) issues closed by a user
