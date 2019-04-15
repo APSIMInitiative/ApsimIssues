@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -83,7 +84,9 @@ func exportToCsv(filename string, pulls []pullRequest) {
 	defer f.Close()
 
 	issuesBydate := getIssuesByDate(pulls)
-	for date, numIssues := range issuesBydate {
+	sortedDates := sortKeys(issuesBydate)
+	for _, date := range sortedDates {
+		numIssues := issuesBydate[date]
 		str := fmt.Sprintf("%v,%d\n", date, numIssues)
 		_, err := f.Write([]byte(str))
 		if err != nil {
@@ -92,6 +95,16 @@ func exportToCsv(filename string, pulls []pullRequest) {
 	}
 }
 
+func sortKeys(m map[time.Time]int) ([]time.Time) {
+	keys := make([]time.Time, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j])})
+	return keys
+}
 func main() {
 	// We expect the user to pass in a username as a command line argument.
 	var username string

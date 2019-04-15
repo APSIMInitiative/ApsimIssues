@@ -2,3 +2,8 @@ credentials.dat
 *.exe
 ApsimIssues
 .vscode
+.Rhistory
+*.pdf
+*.png
+*.csv
+*.dat
