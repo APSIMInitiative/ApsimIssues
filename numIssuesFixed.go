@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/octokit/go-octokit/octokit"
 )
@@ -55,6 +56,42 @@ func numIssuedResolved(pulls []pullRequest) int {
 	return n
 }
 
+func getIssuesByDate(pulls []pullRequest) map[time.Time]int {
+	issues := make(map[time.Time]int)
+	for _, pull := range pulls {
+		issues[*pull.pull.ClosedAt] += len(pull.referencedIssues)
+	}
+	return issues
+}
+
+// Exports a csv file containing two columns: date and num Issued
+// resolved on that date
+func exportToCsv(filename string, pulls []pullRequest) {
+	if _, err := os.Stat("/path/to/whatever"); err == nil {
+		// Delete file if it exists
+		err := os.Remove(filename)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to delete file %v: %v", filename, err))
+		}
+	}
+
+	// Open the file in append mode
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	issuesBydate := getIssuesByDate(pulls)
+	for date, numIssues := range issuesBydate {
+		str := fmt.Sprintf("%v,%d\n", date, numIssues)
+		_, err := f.Write([]byte(str))
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func main() {
 	// We expect the user to pass in a username as a command line argument.
 	var username string
@@ -71,7 +108,7 @@ func main() {
 	auth := octokit.BasicAuth{Login: apiUsername, Password: password}
 	client := octokit.NewClient(auth)
 	pulls := pullsByUser(username, client)
-
+	exportToCsv("issues.dat", pulls)
 	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
 }
 
