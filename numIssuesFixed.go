@@ -13,6 +13,31 @@ import (
 	"github.com/octokit/go-octokit/octokit"
 )
 
+func getIssues(client *octokit.Client, date time.Time) (issues []octokit.Issue) {
+	apsimURL := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
+
+	for &apsimURL != nil {
+		//url, err := apsimURL.Expand(nil)
+		//if err != nil {
+		//	panic(err)
+		//}
+
+		allIssues, result := client.Issues().All(nil, octokit.M{
+			"owner": "APSIMInitiative",
+			"repo":  "ApsimX",
+			"since": date.Format(time.RFC3339),
+		})
+		if result.HasError() {
+			panic(result)
+		}
+		for _, issue := range allIssues {
+			issues = append(issues, issue)
+		}
+
+	}
+	return
+}
+
 func pullsByUser(username string, client *octokit.Client) []pullRequest {
 	var pulls []pullRequest
 	apsimURL := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
@@ -95,14 +120,14 @@ func exportToCsv(filename string, pulls []pullRequest) {
 	}
 }
 
-func sortKeys(m map[time.Time]int) ([]time.Time) {
+func sortKeys(m map[time.Time]int) []time.Time {
 	keys := make([]time.Time, len(m))
 	i := 0
 	for k := range m {
 		keys[i] = k
 		i++
 	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j])})
+	sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j]) })
 	return keys
 }
 func main() {
