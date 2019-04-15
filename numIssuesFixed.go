@@ -1,14 +1,60 @@
 package main
+
 import (
-	"fmt"
-	"github.com/octokit/go-octokit/octokit"
-	"os"
-	"regexp"
-	"io/ioutil"
 	"bufio"
-	"strings"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"strings"
+
+	"github.com/octokit/go-octokit/octokit"
 )
+
+func pullsByUser(username string, client *octokit.Client) []pullRequest {
+	var pulls []pullRequest
+	apsimURL := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
+
+	first := true
+	var numPullRequests int
+	var percentDone float64
+	for &apsimURL != nil {
+		url, err := apsimURL.Expand(nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		allPulls, result := client.PullRequests(url).All()
+		if result.HasError() {
+			panic(result)
+		}
+		for _, pull := range allPulls {
+			if first {
+				numPullRequests = pull.Number
+				first = false
+			}
+			percentDone = 100.0 * float64(numPullRequests-pull.Number) / float64(numPullRequests)
+			fmt.Printf("Working...%.2f%%\r", percentDone)
+			if pull.User.Login == username {
+				pulls = append(pulls, newPull(pull))
+			}
+		}
+		if result.NextPage == nil {
+			break
+		}
+		apsimURL = *result.NextPage
+	}
+	return pulls
+}
+
+func numIssuedResolved(pulls []pullRequest) int {
+	n := 0
+	for _, pull := range pulls {
+		n += len(pull.referencedIssues)
+	}
+	return n
+}
+
 func main() {
 	// We expect the user to pass in a username as a command line argument.
 	var username string
@@ -19,54 +65,19 @@ func main() {
 	} else {
 		username = args[1]
 	}
-	
+
 	apiUsername, password := getCredentials()
-	
-	apsimUrl := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
+
 	auth := octokit.BasicAuth{Login: apiUsername, Password: password}
 	client := octokit.NewClient(auth)
-	// list of keywords taken from https://help.github.com/articles/closing-issues-using-keywords/
-	resolvesRegex := regexp.MustCompile("[close | closes | closed | fix | fixes | fixed | resolve | resolves | resolved] #[0-9]")
-	numResolvedIssues := 0
-	first := true
-	var numPullRequests int
-	var percentDone float64
-	
-	for &apsimUrl != nil {
-		url, err := apsimUrl.Expand(nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		
-		pulls, result := client.PullRequests(url).All()
-		if result.HasError() {
-			fmt.Println("error:", result)
-			return
-		}
-		for _, pull := range pulls {
-			if first {
-				numPullRequests = pull.Number
-				first = false
-			}
-			percentDone = 100.0 * float64(numPullRequests - pull.Number) / float64(numPullRequests)
-			fmt.Printf("Working...%.2f%%\r", percentDone)
-			if pull.User.Login == username {
-				numResolvedIssues += len(resolvesRegex.FindAllStringIndex(pull.Body, -1))
-			}
-		}
-		if result.NextPage == nil {
-			break
-		}
-		apsimUrl = *result.NextPage
-	}
-	fmt.Printf("%s has resolved %d issues.\n", username, numResolvedIssues)
-	fmt.Println("Press enter to exit.")
-	fmt.Scanln()
+	pulls := pullsByUser(username, client)
+
+	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
 }
 
 func getCredentials() (username string, password string) {
 	credentials, err := ioutil.ReadFile("credentials.dat")
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
