@@ -1,2 +1,4 @@
 credentials.dat
 *.exe
+ApsimIssues
+.vscode
