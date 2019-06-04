@@ -7,3 +7,5 @@ ApsimIssues
 *.png
 *.csv
 *.dat
+.cache.txt
+__debug_bin

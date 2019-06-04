@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"sort"
-	"strings"
-	"time"
-
 	"github.com/octokit/go-octokit/octokit"
+	"time"
 )
 
 func getIssues(client *octokit.Client, date time.Time) (issues []octokit.Issue) {
@@ -118,66 +113,4 @@ func exportToCsv(filename string, pulls []pullRequest) {
 			panic(err)
 		}
 	}
-}
-
-func sortKeys(m map[time.Time]int) []time.Time {
-	keys := make([]time.Time, len(m))
-	i := 0
-	for k := range m {
-		keys[i] = k
-		i++
-	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j]) })
-	return keys
-}
-
-// Reads `filename` and returns an authentication method
-func getAuth(filename string) octokit.AuthMethod {
-	credentials, err := ioutil.ReadFile(filename)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	var username, password string
-	scanner := bufio.NewScanner(strings.NewReader(string(credentials)))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "username=") {
-			username = strings.TrimPrefix(line, "username=")
-		}
-		if strings.HasPrefix(line, "password=") {
-			password = strings.TrimPrefix(line, "password=")
-		}
-		if strings.HasPrefix(line, "token=") {
-			token := strings.TrimPrefix(line, "token=")
-			return octokit.TokenAuth{AccessToken: token}
-		}
-	}
-	
-	return octokit.BasicAuth{Login: username, Password: password}
-}
-
-func main() {
-	// We expect the user to pass in a username as a command line argument.
-	var username string
-	args := os.Args
-	if len(args) != 2 {
-		fmt.Println("No username received as command line argument. Defaulting to hol430...")
-		username = "hol430"
-	} else {
-		username = args[1]
-	}
-
-	auth := getAuth("credentials.dat")
-	client := octokit.NewClient(auth)
-	pulls := pullsByUser(username, client)
-	
-	graphFile := "bugs.png"
-	createGraph(pulls, graphFile)
-	fmt.Printf("Generated graph '%v'\n", graphFile)
-	
-	dataFile := "issues.csv"
-	exportToCsv(dataFile, pulls)
-	fmt.Printf("Generating data file '%v'\n", dataFile)
-	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
 }
