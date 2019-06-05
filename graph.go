@@ -25,6 +25,8 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 		Format: "Jan 2006",
 		Ticker: TimeTicker{},
 	}
+	p.X.Tick.Label.Font.Size = 20
+	p.Y.Tick.Label.Font.Size = 20
 
 	p.Y.Label.Text = ylabel
 	p.Y.Label.Font.Size = 20
