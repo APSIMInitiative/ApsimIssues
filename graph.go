@@ -4,11 +4,15 @@ import (
 	"time"
 
 	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/palette"
 	"gonum.org/v1/plot/plotter"
 )
 
 // Creates a scatter plot with the given parameters
-func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName string, series ...map[time.Time]int) {
+func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
+	if data == nil || len(data) < 1 {
+		panic("Graph error: No series provided")
+	}
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -24,26 +28,20 @@ func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName 
 
 	p.Y.Label.Text = ylabel
 	p.Y.Label.Font.Size = 20
+	p.Legend.Font.Size = 24
+	p.Legend.ThumbnailWidth = 24
+	colours := palette.Rainbow(len(data)+1, 0, 1, 1, 1, 1).Colors()
 
-	line, err := plotter.NewLine(getXYPairs(dates, y))
-	if err != nil {
-		panic(err)
-	}
-	p.Add(line)
-
-	if series != nil && len(series) > 0 {
-		for i := 0; i < len(series); i++ {
-			xn := sortKeys(series[i])
-			var yn []int
-			for _, x := range xn {
-				yn = append(yn, series[i][x])
-			}
-			line, err = plotter.NewLine(getXYPairs(xn, yn))
-			if err != nil {
-				panic(err)
-			}
-			p.Add(line)
+	for i := 0; i < len(data); i++ {
+		line, err := plotter.NewLine(data[i].getXYPairs())
+		if len(data) > 1 {
+			line.LineStyle.Color = colours[i]
+			p.Legend.Add(data[i].Name, line)
 		}
+		if err != nil {
+			panic(err)
+		}
+		p.Add(line)
 	}
 
 	// Write to disk
@@ -51,18 +49,6 @@ func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName 
 	if err != nil {
 		panic(err)
 	}
-}
-
-func getXYPairs(dates []time.Time, y []int) plotter.XYs {
-	if len(dates) != len(y) {
-		panic("Error: x/y data length mismatch")
-	}
-	points := make(plotter.XYs, len(dates))
-	for i, date := range dates {
-		points[i].X = float64(date.Unix())
-		points[i].Y = float64(y[i])
-	}
-	return points
 }
 
 // Ticks generates ticks for the time axis

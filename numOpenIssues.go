@@ -78,48 +78,35 @@ func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
 	return closed
 }
 
+// Graphs the number of open bugs over time.
 func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
 	issuesOpenedByDate := getOpenIssuesByDate(issues)
 
-	// Convert the map into two arrays. Maps have no concept of order,
-	// but the arrays need be ordered by date ascending.
-	dates := sortKeys(issuesOpenedByDate)
-	var numIssues []int
-	for _, date := range dates {
-		numIssues = append(numIssues, issuesOpenedByDate[date])
-	}
+	title := "Change in number of open bugs over time"
 
 	createLinePlot(
-		dates,
-		numIssues,
-		"Change in number of open bugs over time",
+		title,
 		"Date",
 		"Number of open bugs",
-		graphFileName)
+		graphFileName,
+		seriesFromMap(title, issuesOpenedByDate))
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
 func graphOpenedVsClosed(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
-	issuesOpenedByDate := getCumOpenIssuesByDate(issues)
-
-	// Convert the map into two arrays. Maps have no concept of order,
-	// but the arrays need be ordered by date ascending.
-	dates := sortKeys(issuesOpenedByDate)
-	var numIssues []int
-	for _, date := range dates {
-		numIssues = append(numIssues, issuesOpenedByDate[date])
-	}
-
-	closedByDate := getCumIssuesClosedByDate(issues)
+	opened := seriesFromMap("Total issues opened",
+		getCumOpenIssuesByDate(issues))
+	closed := seriesFromMap("Total issues closed",
+		getCumIssuesClosedByDate(issues))
 
 	createLinePlot(
-		dates,
-		numIssues,
-		"Change in number of open bugs over time",
+		"Total issues opened and closed over time",
 		"Date",
 		"Number of open bugs",
 		graphFileName,
-		closedByDate)
+		opened,
+		closed)
+	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
