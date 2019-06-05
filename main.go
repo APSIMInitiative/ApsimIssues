@@ -13,7 +13,9 @@ const (
 )
 
 var quiet = false
-var cache = ".cache.txt"
+var issuesCache = ".issues.cache.dat"
+var pullsCache = ".pulls.cache.dat"
+var useCache = true // Change to false for release!!!
 
 func main() {
 	// We expect the user to pass in a username as a command line argument.
@@ -24,26 +26,18 @@ func main() {
 		username = "hol430"
 	} else {
 		username = args[1]
+		fmt.Printf("username=%s\n", username)
 	}
 	if len(args) > 2 {
 		if args[2] == "-q" {
 			quiet = true
 		}
 	}
-	fmt.Printf("username=%s\n", username) // Temp code to fix unused var warning!!!! Don't commit!!
 
 	auth := getAuth("credentials.dat")
 	client := octokit.NewClient(auth)
 
-	pulls := pullsByUser(username, client)
-	graphFile := "bugs.png"
-	createBugfixGraph(pulls, graphFile)
-	fmt.Printf("Generated graph '%v'\n", graphFile)
-
-	dataFile := "issues.csv"
-	exportToCsv(dataFile, pulls)
-	fmt.Printf("Generating data file '%v'\n", dataFile)
-	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
+	calcBugFixRate(username, client, "bugs.png")
 
 	numIssuesByDate(client, owner, repo)
 }

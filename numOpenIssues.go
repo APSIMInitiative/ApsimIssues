@@ -45,8 +45,8 @@ func getIssuesOpenedByDate(issues []octokit.Issue) map[time.Time]int {
 
 func numIssuesByDate(client *octokit.Client, owner, repo string) {
 	var issues []octokit.Issue
-	if fileExists(cache) {
-		issues = issuesFromCache(cache)
+	if useCache && fileExists(issuesCache) {
+		issues = issuesFromCache(issuesCache)
 	} else {
 		// Get all issues (open + closed) on ApsimX.
 		issues = getAllIssues(client, owner, repo, !quiet)
@@ -55,12 +55,14 @@ func numIssuesByDate(client *octokit.Client, owner, repo string) {
 	// Generate a map of issues over time.
 	issuesOpenedByDate := getIssuesOpenedByDate(issues)
 
-	// Convert the map into two arrays.
+	// Convert the map into two arrays. Maps have no concept of order,
+	// but the arrays need be ordered by date ascending.
 	dates := sortKeys(issuesOpenedByDate)
 	var numIssues []int
 	for _, date := range dates {
 		numIssues = append(numIssues, issuesOpenedByDate[date])
 	}
+
 	createScatterPlot(
 		dates,
 		numIssues, "Change in number of open bugs over time",
@@ -69,5 +71,5 @@ func numIssuesByDate(client *octokit.Client, owner, repo string) {
 		"openIssues.png")
 
 	// Cache results for next time.
-	writeToCache(cache, issues)
+	writeIssuesToCache(issuesCache, issues)
 }

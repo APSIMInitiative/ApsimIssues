@@ -2,69 +2,17 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"github.com/octokit/go-octokit/octokit"
 	"time"
+
+	"github.com/octokit/go-octokit/octokit"
 )
 
-func getIssues(client *octokit.Client, date time.Time) (issues []octokit.Issue) {
-	apsimURL := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
-
-	for &apsimURL != nil {
-		//url, err := apsimURL.Expand(nil)
-		//if err != nil {
-		//	panic(err)
-		//}
-
-		allIssues, result := client.Issues().All(nil, octokit.M{
-			"owner": "APSIMInitiative",
-			"repo":  "ApsimX",
-			"since": date.Format(time.RFC3339),
-		})
-		if result.HasError() {
-			panic(result)
-		}
-		for _, issue := range allIssues {
-			issues = append(issues, issue)
-		}
-
-	}
-	return
-}
-
-func pullsByUser(username string, client *octokit.Client) []pullRequest {
+func pullsByUser(username string, allPulls []octokit.PullRequest) []pullRequest {
 	var pulls []pullRequest
-	apsimURL := octokit.Hyperlink("repos/APSIMInitiative/ApsimX/pulls?state=closed")
-
-	first := true
-	var numPullRequests int
-	var percentDone float64
-	for &apsimURL != nil {
-		url, err := apsimURL.Expand(nil)
-		if err != nil {
-			log.Fatal(err)
+	for _, pull := range allPulls {
+		if pull.User.Login == username {
+			pulls = append(pulls, newPull(pull))
 		}
-
-		allPulls, result := client.PullRequests(url).All()
-		if result.HasError() {
-			panic(result)
-		}
-		for _, pull := range allPulls {
-			if first {
-				numPullRequests = pull.Number
-				first = false
-			}
-			percentDone = 100.0 * float64(numPullRequests-pull.Number) / float64(numPullRequests)
-			fmt.Printf("Working...%.2f%%\r", percentDone)
-			if pull.User.Login == username {
-				pulls = append(pulls, newPull(pull))
-			}
-		}
-		if result.NextPage == nil {
-			break
-		}
-		apsimURL = *result.NextPage
 	}
 	return pulls
 }
@@ -80,37 +28,48 @@ func numIssuedResolved(pulls []pullRequest) int {
 func getIssuesByDate(pulls []pullRequest) map[time.Time]int {
 	issues := make(map[time.Time]int)
 	for _, pull := range pulls {
-		issues[*pull.pull.ClosedAt] += len(pull.referencedIssues)
+		if pull.pull.ClosedAt != nil {
+			issues[*pull.pull.ClosedAt] += len(pull.referencedIssues)
+		}
 	}
 	return issues
 }
 
-// Exports a csv file containing two columns: date and num Issued
-// resolved on that date
-func exportToCsv(filename string, pulls []pullRequest) {
-	if _, err := os.Stat("/path/to/whatever"); err == nil {
-		// Delete file if it exists
-		err := os.Remove(filename)
-		if err != nil {
-			panic(fmt.Sprintf("Unable to delete file %v: %v", filename, err))
-		}
+func calcBugFixRate(username string, client *octokit.Client, graphFileName string) {
+	// Get all pull requests created by the user.
+	var allPulls []octokit.PullRequest
+	if useCache && fileExists(pullsCache) {
+		allPulls = pullsFromCache(pullsCache)
+	} else {
+		allPulls = getAllPullRequests(client, owner, repo, !quiet)
+	}
+	pulls := pullsByUser(username, allPulls)
+
+	// Generate a map of dates to number of issues referenced in pull requests.
+	issuesByDate := getIssuesByDate(pulls)
+
+	// Convert the map into two arrays. Maps have no concept of order,
+	// but the arrays need be ordered by date ascending.
+	dates := sortKeys(issuesByDate)
+	var issues []int // unused
+	var cumIssues []int
+	sum := 0
+	for _, date := range dates {
+		issues = append(issues, issuesByDate[date])
+		sum += issuesByDate[date]
+		cumIssues = append(cumIssues, sum)
 	}
 
-	// Open the file in append mode
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
+	createScatterPlot(
+		dates,
+		cumIssues,
+		fmt.Sprintf("Cumulative bugs fixed over time by %s", username),
+		"Date",
+		"Total Number of Issues Resolved",
+		graphFileName)
 
-	issuesBydate := getIssuesByDate(pulls)
-	sortedDates := sortKeys(issuesBydate)
-	for _, date := range sortedDates {
-		numIssues := issuesBydate[date]
-		str := fmt.Sprintf("%v,%d\n", date, numIssues)
-		_, err := f.Write([]byte(str))
-		if err != nil {
-			panic(err)
-		}
-	}
+	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
+
+	// Update cache for next time.
+	writeToCache(pullsCache, allPulls)
 }
