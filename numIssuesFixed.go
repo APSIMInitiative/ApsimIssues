@@ -35,21 +35,16 @@ func getIssuesByDate(pulls []pullRequest) map[time.Time]int {
 	return issues
 }
 
-func calcBugFixRate(username string, client *octokit.Client, graphFileName string) {
-	// Get all pull requests created by the user.
-	var allPulls []octokit.PullRequest
-	if useCache && fileExists(pullsCache) {
-		allPulls = pullsFromCache(pullsCache)
-	} else {
-		allPulls = getAllPullRequests(client, owner, repo, !quiet)
-	}
+func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName string) {
+	// Filter out pull requests not created by the user.
 	pulls := pullsByUser(username, allPulls)
 
 	// Generate a map of dates to number of issues referenced in pull requests.
 	issuesByDate := getIssuesByDate(pulls)
 
 	// Convert the map into two arrays. Maps have no concept of order,
-	// but the arrays need be ordered by date ascending.
+	// but the data needs to be ordered by date ascending before we can
+	// graph it.
 	dates := sortKeys(issuesByDate)
 	var issues []int // unused
 	var cumIssues []int
@@ -70,6 +65,4 @@ func calcBugFixRate(username string, client *octokit.Client, graphFileName strin
 
 	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
 
-	// Update cache for next time.
-	writeToCache(pullsCache, allPulls)
 }

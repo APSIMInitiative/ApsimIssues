@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/octokit/go-octokit/octokit"
-	//"time"
 )
 
 // Increments all values in the map whose date key lies on or after
@@ -43,15 +42,7 @@ func getIssuesOpenedByDate(issues []octokit.Issue) map[time.Time]int {
 	return issuesByDate
 }
 
-func numIssuesByDate(client *octokit.Client, owner, repo string) {
-	var issues []octokit.Issue
-	if useCache && fileExists(issuesCache) {
-		issues = issuesFromCache(issuesCache)
-	} else {
-		// Get all issues (open + closed) on ApsimX.
-		issues = getAllIssues(client, owner, repo, !quiet)
-	}
-
+func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
 	issuesOpenedByDate := getIssuesOpenedByDate(issues)
 
@@ -68,8 +59,5 @@ func numIssuesByDate(client *octokit.Client, owner, repo string) {
 		numIssues, "Change in number of open bugs over time",
 		"Date",
 		"Number of open bugs",
-		"openIssues.png")
-
-	// Cache results for next time.
-	writeIssuesToCache(issuesCache, issues)
+		graphFileName)
 }

@@ -17,6 +17,21 @@ var issuesCache = ".issues.cache.dat"
 var pullsCache = ".pulls.cache.dat"
 var useCache = true // Change to false for release!!!
 
+func getData(client *octokit.Client) ([]octokit.Issue, []octokit.PullRequest) {
+	// Only use cache if cache files are available.
+	if useCache && fileExists(issuesCache) && fileExists(pullsCache) {
+		return getDataFromCache(issuesCache, pullsCache)
+	}
+	// Only show progress if not in quiet mode.
+	issues, pulls := getDataFromGithub(client, owner, repo, !quiet)
+
+	// Update cache for next time.
+	writeToCache(pullsCache, pulls)
+	writeIssuesToCache(issuesCache, issues)
+
+	return issues, pulls
+}
+
 func main() {
 	// We expect the user to pass in a username as a command line argument.
 	var username string
@@ -36,8 +51,10 @@ func main() {
 
 	auth := getAuth("credentials.dat")
 	client := octokit.NewClient(auth)
+	issues, pullRequests := getData(client)
 
-	calcBugFixRate(username, client, "bugs.png")
+	fmt.Printf("Number of pull requests=%d\n", len(pullRequests))
 
-	numIssuesByDate(client, owner, repo)
+	graphBugFixRate(pullRequests, username, "bugs.png")
+	graphIssuesByDate(issues, "openIssues.png")
 }

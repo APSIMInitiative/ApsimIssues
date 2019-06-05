@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -49,62 +48,6 @@ func sortKeys(m map[time.Time]int) []time.Time {
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j]) })
 	return keys
-}
-
-// Reads an array of octokit issues from a json text file.
-func issuesFromCache(fileName string) []octokit.Issue {
-	f, err := os.Open(fileName)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	decoder := json.NewDecoder(f)
-
-	// Read opening brace.
-	_, err = decoder.Token()
-	if err != nil {
-		panic(err)
-	}
-
-	// Deserialise each value in the array.
-	var issues []octokit.Issue
-	for decoder.More() {
-		var issue octokit.Issue
-		err := decoder.Decode(&issue)
-		if err != nil {
-			panic(err)
-		}
-		issues = append(issues, issue)
-	}
-	return issues
-}
-
-// Reads an array of pull requests from a json text file.
-func pullsFromCache(fileName string) []octokit.PullRequest {
-	f, err := os.Open(fileName)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	decoder := json.NewDecoder(f)
-
-	// Read opening brace.
-	_, err = decoder.Token()
-	if err != nil {
-		panic(err)
-	}
-
-	// Deserialise each value in the array.
-	var pulls []octokit.PullRequest
-	for decoder.More() {
-		var pull octokit.PullRequest
-		err := decoder.Decode(&pull)
-		if err != nil {
-			panic(err)
-		}
-		pulls = append(pulls, pull)
-	}
-	return pulls
 }
 
 // Gets all issues (open and closed) in a repository.
@@ -190,36 +133,12 @@ func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress
 	return pulls
 }
 
-func readFromCache(fileName string, object *interface{}) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	decoder := json.NewDecoder(f)
-	decoder.Decode(object)
-}
-
-// Serialises the array of issues and writes them to a cache file.
-func writeIssuesToCache(fileName string, issues []octokit.Issue) {
-	f, err := os.Create(fileName)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	encoder := json.NewEncoder(f)
-	encoder.Encode(issues)
-}
-
-// Serialises the array of issues and writes them to a cache file.
-func writeToCache(fileName string, data []octokit.PullRequest) {
-	f, err := os.Create(fileName)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	encoder := json.NewEncoder(f)
-	encoder.Encode(data)
+// Gets all issues (open and closed) in a repository.
+func getDataFromGithub(client *octokit.Client, owner, repo string, showProgress bool) (issues []octokit.Issue, pulls []octokit.PullRequest) {
+	// TODO : combine these methods.
+	issues = getAllIssues(client, owner, repo, showProgress)
+	pulls = getAllPullRequests(client, owner, repo, showProgress)
+	return
 }
 
 // Checks if a file exists
