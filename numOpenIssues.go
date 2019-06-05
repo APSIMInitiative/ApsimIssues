@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/octokit/go-octokit/octokit"
@@ -54,10 +55,11 @@ func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 		numIssues = append(numIssues, issuesOpenedByDate[date])
 	}
 
-	createScatterPlot(
+	createLinePlot(
 		dates,
 		numIssues, "Change in number of open bugs over time",
 		"Date",
 		"Number of open bugs",
 		graphFileName)
+	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }

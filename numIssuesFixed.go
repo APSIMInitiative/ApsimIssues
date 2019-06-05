@@ -55,14 +55,14 @@ func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName str
 		cumIssues = append(cumIssues, sum)
 	}
 
-	createScatterPlot(
+	createLinePlot(
 		dates,
 		cumIssues,
 		fmt.Sprintf("Cumulative bugs fixed over time by %s", username),
 		"Date",
 		"Total Number of Issues Resolved",
 		graphFileName)
-
+	fmt.Printf("Generated graph '%s'\n", graphFileName)
 	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
 
 }
