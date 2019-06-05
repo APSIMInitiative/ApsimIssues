@@ -8,7 +8,7 @@ import (
 )
 
 // Creates a scatter plot with the given parameters
-func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName string) {
+func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName string, series ...map[time.Time]int) {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -29,8 +29,23 @@ func createLinePlot(dates []time.Time, y []int, title, xlabel, ylabel, fileName 
 	if err != nil {
 		panic(err)
 	}
-
 	p.Add(line)
+
+	if series != nil && len(series) > 0 {
+		for i := 0; i < len(series); i++ {
+			xn := sortKeys(series[i])
+			var yn []int
+			for _, x := range xn {
+				yn = append(yn, series[i][x])
+			}
+			line, err = plotter.NewLine(getXYPairs(xn, yn))
+			if err != nil {
+				panic(err)
+			}
+			p.Add(line)
+		}
+	}
+
 	// Write to disk
 	err = p.Save(1920, 1080, fileName)
 	if err != nil {

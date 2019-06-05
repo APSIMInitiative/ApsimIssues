@@ -40,4 +40,5 @@ func main() {
 
 	graphBugFixRate(pullRequests, username, "bugs.png")
 	graphIssuesByDate(issues, "openIssues.png")
+	graphOpenedVsClosed(issues, "openedVsClosed.png")
 }

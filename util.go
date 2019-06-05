@@ -50,6 +50,7 @@ func sortKeys(m map[time.Time]int) []time.Time {
 	return keys
 }
 
+// Calculates the exact amount of time between two dates.
 // https://stackoverflow.com/a/36531443
 func diff(a, b time.Time) (year, month, day, hour, min, sec int) {
 	if a.Location() != b.Location() {
@@ -143,6 +144,8 @@ func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool)
 	return
 }
 
+// getAllPullRequests uses the github api to fetch all pull requests
+// (open and closed) on a given repo.
 func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress bool) []octokit.PullRequest {
 	var pulls []octokit.PullRequest
 	apsimURL := octokit.Hyperlink("repos/{owner}/{repo}/pulls?state=closed")
@@ -195,6 +198,8 @@ func getDataFromGithub(client *octokit.Client, owner, repo string, showProgress 
 	return
 }
 
+// Gets all data. Will attempt use the cache if the useCache global is
+// set to true. Will call the github api otherwise.
 func getData(client *octokit.Client) ([]octokit.Issue, []octokit.PullRequest) {
 	// Only use cache if cache files are available.
 	if useCache && fileExists(issuesCache) && fileExists(pullsCache) {
