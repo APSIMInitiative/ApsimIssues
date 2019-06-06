@@ -8,4 +8,5 @@ ApsimIssues
 *.csv
 *.dat
 .cache.txt
+*.cache
 __debug_bin

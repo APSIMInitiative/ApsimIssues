@@ -6,6 +6,25 @@ import (
 	"github.com/octokit/go-octokit/octokit"
 )
 
+// graphBugFixRate graphs the cumulative number of bugs fixed by a user
+// over time.
+func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName string) {
+	bugFixRate := getBugFixRate(allPulls, username)
+	title := fmt.Sprintf("Cumulative bugs fixed over time by %s", username)
+
+	data := seriesFromMap(title, bugFixRate)
+
+	createLinePlot(
+		title,
+		"Date",
+		"Total Number of Issues Resolved",
+		graphFileName,
+		data)
+	if bugFixRate != nil {
+		fmt.Printf("%s has resolved %d issues.\n", username, bugFixRate[getLastDate(bugFixRate)])
+	}
+}
+
 // graphIssuesByDate graphs the number of open bugs over time.
 func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
@@ -19,7 +38,6 @@ func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 		"Number of open bugs",
 		graphFileName,
 		seriesFromMap(title, issuesOpenedByDate))
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
 // graphOpenedVsClosed graphs two series:
@@ -39,7 +57,6 @@ func graphOpenedVsClosed(issues []octokit.Issue, graphFileName string) {
 		graphFileName,
 		opened,
 		closed)
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
 // graphOpenedVsClosed graphs three series:
@@ -74,7 +91,6 @@ func graphOpenedVsClosedForUser(issues []octokit.Issue, pulls []octokit.PullRequ
 		opened,
 		closed,
 		fixedSeries)
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
 // graphOpenedVsClosedForUsers graphs many series:
@@ -105,7 +121,6 @@ func graphOpenedVsClosedForUsers(issues []octokit.Issue, pulls []octokit.PullReq
 		"Number of bugs",
 		graphFileName,
 		allSeries...)
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
 // graphBugfixRateByUser graphs many series:
@@ -144,5 +159,4 @@ func graphBugfixRateByUser(issues []octokit.Issue, pulls []octokit.PullRequest, 
 		"Number of bugs",
 		graphFileName,
 		userSeries...)
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }

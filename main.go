@@ -13,8 +13,8 @@ const (
 )
 
 var quiet = false
-var issuesCache = ".issues.cache.dat"
-var pullsCache = ".pulls.cache.dat"
+var issuesCache = ".issues.cache"
+var pullsCache = ".pulls.cache"
 var useCache = true // Change to false for release!!!
 
 func main() {
@@ -38,6 +38,18 @@ func main() {
 	client := octokit.NewClient(auth)
 	issues, pullRequests := getData(client)
 
+	// Diagnostics
+	if !quiet {
+		fmt.Printf("Owner:                      %s\n", owner)
+		fmt.Printf("Repo:                       %s\n", repo)
+		fmt.Printf("User:                       %s\n\n", username)
+	}
+	fmt.Printf("Number of open issues:          %d\n", getNumOpenIssues(issues))
+	fmt.Printf("Number of closed issues:        %d\n", getNumClosedIssues(issues))
+	fmt.Printf("Number of open pull requests:   %d\n", getNumOpenPullRequests(pullRequests))
+	fmt.Printf("Number of closed pull requests: %d\n\n", getNumClosedPullRequests(pullRequests))
+
+	// Graphs
 	graphBugFixRate(pullRequests, username, "bugs.png")
 	graphIssuesByDate(issues, "openIssues.png")
 	//graphOpenedVsClosed(issues, "openedVsClosed.png")
@@ -45,4 +57,5 @@ func main() {
 	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", username, "zur003", "hol353")
 	graphBugfixRateByUser(issues, pullRequests, "fixersComparison.png", 100)
 	graphBugfixRateByUser(issues, pullRequests, "allfixersComparison.png", -1)
+
 }

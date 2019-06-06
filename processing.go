@@ -1,11 +1,58 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/octokit/go-octokit/octokit"
 )
+
+// getNumOpenIssues takes an array of issues and returns the number of
+// issues which are open.
+func getNumOpenIssues(issues []octokit.Issue) int {
+	var sum int
+	for _, issue := range issues {
+		if issue.ClosedAt == nil {
+			sum++
+		}
+	}
+	return sum
+}
+
+// getNumClosedIssues takes an array of issues and returns the number of
+// issues which are closed.
+func getNumClosedIssues(issues []octokit.Issue) int {
+	var sum int
+	for _, issue := range issues {
+		if issue.ClosedAt != nil {
+			sum++
+		}
+	}
+	return sum
+}
+
+// getNumOpenPullRequests takes an array of pull requests and returns
+// the number of pull requests which are open.
+func getNumOpenPullRequests(pulls []octokit.PullRequest) int {
+	var sum int
+	for _, pull := range pulls {
+		if pull.ClosedAt == nil {
+			sum++
+		}
+	}
+	return sum
+}
+
+// getNumClosedPullRequests takes an array of pull requests and returns
+// the number of pull requests which are open.
+func getNumClosedPullRequests(pulls []octokit.PullRequest) int {
+	var sum int
+	for _, pull := range pulls {
+		if pull.ClosedAt != nil {
+			sum++
+		}
+	}
+	return sum
+}
 
 // pullsByUser takes an array of pull requests and a username, and
 // returns all pull requests created by that user.
@@ -40,7 +87,7 @@ func getCumIssuesByDate(pulls []pullRequest) map[time.Time]int {
 	}
 	for _, pull := range pulls {
 		if pull.pull.ClosedAt != nil {
-			incrementAfterDate(&issues, *pull.pull.ClosedAt)
+			addAfterDate(&issues, *pull.pull.ClosedAt, len(pull.referencedIssues))
 		}
 	}
 	return issues
@@ -119,24 +166,4 @@ func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
 		}
 	}
 	return closed
-}
-
-// graphBugFixRate graphs the cumulative number of bugs fixed by a user
-// over time.
-func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName string) {
-	bugFixRate := getBugFixRate(allPulls, username)
-	title := fmt.Sprintf("Cumulative bugs fixed over time by %s", username)
-
-	data := seriesFromMap(title, bugFixRate)
-
-	createLinePlot(
-		title,
-		"Date",
-		"Total Number of Issues Resolved",
-		graphFileName,
-		data)
-	fmt.Printf("Generated graph '%s'\n", graphFileName)
-	if bugFixRate != nil {
-		fmt.Printf("%s has resolved %d issues.\n", username, bugFixRate[getLastDate(bugFixRate)])
-	}
 }

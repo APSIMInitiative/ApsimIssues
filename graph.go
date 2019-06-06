@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"gonum.org/v1/plot"
@@ -54,6 +55,9 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	err = p.Save(1920, 1080, fileName)
 	if err != nil {
 		panic(err)
+	}
+	if !quiet {
+		fmt.Printf("Generated graph '%s'\n", fileName)
 	}
 }
 

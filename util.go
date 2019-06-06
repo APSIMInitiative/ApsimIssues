@@ -117,6 +117,16 @@ func incrementAfterDate(issues *map[time.Time]int, date time.Time) {
 	}
 }
 
+// addAfterDate adds a given value to all values in the map whose date
+// key lies on or after a given date.
+func addAfterDate(issues *map[time.Time]int, date time.Time, value int) {
+	for key := range *issues {
+		if key.After(date) || key == date {
+			(*issues)[key] += value
+		}
+	}
+}
+
 // decrementAfterDate decrements all values in the map whose date key
 // lies on or after a given date.
 func decrementAfterDate(issues *map[time.Time]int, date time.Time) {
@@ -238,7 +248,7 @@ func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress
 		apsimURL = *result.NextPage
 	}
 	if showProgress {
-		fmt.Printf("Fetching pull requests: 100.00%%...\r")
+		fmt.Printf("Fetching pull requests: 100.00%%...\n")
 	}
 	return pulls
 }
