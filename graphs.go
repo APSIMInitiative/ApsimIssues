@@ -2,83 +2,11 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/octokit/go-octokit/octokit"
 )
 
-// Increments all values in the map whose date key lies on or after
-// a given date.
-func incrementAfterDate(issues *map[time.Time]int, date time.Time) {
-	for key := range *issues {
-		if key.After(date) || key == date {
-			(*issues)[key]++
-		}
-	}
-}
-
-// Decrements all values in the map whose date key lies on or after
-// a given date.
-func decrementAfterDate(issues *map[time.Time]int, date time.Time) {
-	for key := range *issues {
-		if key.After(date) || key == date {
-			(*issues)[key]--
-		}
-	}
-}
-
-// Gets a map of dates to the number of open issues on that date.
-func getOpenIssuesByDate(issues []octokit.Issue) map[time.Time]int {
-	issuesByDate := make(map[time.Time]int)
-	// Initialise the map with value for each date set to 0.
-	for _, issue := range issues {
-		issuesByDate[issue.CreatedAt] = 0
-	}
-
-	for _, issue := range issues {
-		incrementAfterDate(&issuesByDate, issue.CreatedAt)
-		if issue.ClosedAt != nil {
-			decrementAfterDate(&issuesByDate, *issue.ClosedAt)
-		}
-	}
-	return issuesByDate
-}
-
-// Gets a map of dates to the number of issues opened on or before that
-// date.
-func getCumOpenIssuesByDate(issues []octokit.Issue) map[time.Time]int {
-	issuesByDate := make(map[time.Time]int)
-	// Initialise the map with value for each date set to 0.
-	for _, issue := range issues {
-		issuesByDate[issue.CreatedAt] = 0
-	}
-
-	for _, issue := range issues {
-		incrementAfterDate(&issuesByDate, issue.CreatedAt)
-	}
-	return issuesByDate
-}
-
-// Gets a map of dates to the number of closed issuse on that date.
-func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
-	closed := make(map[time.Time]int)
-	// Initialise the map with value for each date set to 0.
-	for _, issue := range issues {
-		//closed[issue.CreatedAt] = 0
-		if issue.ClosedAt != nil {
-			closed[*issue.ClosedAt] = 0
-		}
-	}
-
-	for _, issue := range issues {
-		if issue.ClosedAt != nil {
-			incrementAfterDate(&closed, *issue.ClosedAt)
-		}
-	}
-	return closed
-}
-
-// Graphs the number of open bugs over time.
+// graphIssuesByDate graphs the number of open bugs over time.
 func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
 	issuesOpenedByDate := getOpenIssuesByDate(issues)
@@ -94,6 +22,9 @@ func graphIssuesByDate(issues []octokit.Issue, graphFileName string) {
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
+// graphOpenedVsClosed graphs two series:
+// 1. Cumulative number of issues opened over time.
+// 2. Cumulative number of issues closed over time.
 func graphOpenedVsClosed(issues []octokit.Issue, graphFileName string) {
 	// Generate a map of issues over time.
 	opened := seriesFromMap("Total issues opened",
@@ -111,21 +42,18 @@ func graphOpenedVsClosed(issues []octokit.Issue, graphFileName string) {
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
+// graphOpenedVsClosed graphs three series:
+// 1. Cumulative number of issues opened over time.
+// 2. Cumulative number of issues closed over time.
+// 3. Cumulative number of issues fixed over time by a given user.
 func graphOpenedVsClosedForUser(issues []octokit.Issue, pulls []octokit.PullRequest, userName, graphFileName string) {
-	// Get data for issues fixed by the user.
-	dates, fixed := getBugFixRate(pulls, userName)
-	fixedSeries := series{
-		Name: fmt.Sprintf("Total fixed by %s", userName),
-		X:    dates,
-		Y:    fixed,
-	}
-
-	if len(dates) < 1 {
-		return
-	}
+	bugFixRate := getBugFixRate(pulls, userName)
+	fixedSeries := seriesFromMap(
+		fmt.Sprintf("Total fixed by %s", userName),
+		bugFixRate)
 
 	// We only want to graph data on or after the date of the first bug fixed by the user.
-	dateFirstBugfix := dates[0]
+	dateFirstBugfix := getFirstDate(bugFixRate)
 	openedAfterDate := filterIssues(issues, func(issue octokit.Issue) bool {
 		return issue.CreatedAt.After(dateFirstBugfix) || issue.CreatedAt == dateFirstBugfix
 	})
@@ -149,16 +77,18 @@ func graphOpenedVsClosedForUser(issues []octokit.Issue, pulls []octokit.PullRequ
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
+// graphOpenedVsClosedForUsers graphs many series:
+// 1. Cumulative number of issues opened over time.
+// 2. Cumulative number of issues closed over time.
+// 3. Cumulative number of issues fixed over time for each user.
 func graphOpenedVsClosedForUsers(issues []octokit.Issue, pulls []octokit.PullRequest, graphFileName string, users ...string) {
 	// Get data for issues fixed for each user.
 	var userSeries []series
 	for _, userName := range users {
-		dates, fixed := getBugFixRate(pulls, userName)
-		userSeries = append(userSeries, series{
-			Name: fmt.Sprintf("Total fixed by %s", userName),
-			X:    dates,
-			Y:    fixed,
-		})
+		newSeries := seriesFromMap(
+			fmt.Sprintf("Total fixed by %s", userName),
+			getBugFixRate(pulls, userName))
+		userSeries = append(userSeries, newSeries)
 	}
 	// Generate a map of cumulative issues opened and closed over time.
 	opened := seriesFromMap("Total issues opened",
@@ -178,9 +108,11 @@ func graphOpenedVsClosedForUsers(issues []octokit.Issue, pulls []octokit.PullReq
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
 }
 
-// graphBugfixRateByUser graphs the cumulative issues opened and closed
-// vs the total number of issues fixed by each user who has fixed at
-// least `minN` bugs.
+// graphBugfixRateByUser graphs many series:
+// 1. Cumulative number of issues opened over time.
+// 2. Cumulative number of issues closed over time.
+// 3. Cumulative number of issues fixed over time for each user who has
+//    fixed at least a given number of issues.
 func graphBugfixRateByUser(issues []octokit.Issue, pulls []octokit.PullRequest, graphFileName string, minN int) {
 	// Get data for issues fixed for each user.
 	var userSeries []series

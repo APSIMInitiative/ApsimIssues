@@ -13,7 +13,7 @@ import (
 	"github.com/octokit/go-octokit/octokit"
 )
 
-// Reads `filename` and returns an authentication method
+// getAuth reads a file and returns a github authentication method.
 func getAuth(filename string) octokit.AuthMethod {
 	credentials, err := ioutil.ReadFile(filename)
 
@@ -39,6 +39,8 @@ func getAuth(filename string) octokit.AuthMethod {
 	return octokit.BasicAuth{Login: username, Password: password}
 }
 
+// sortKeys returns a slice of all keys in a map, sorted in
+// chronological ascending order.
 func sortKeys(m map[time.Time]int) []time.Time {
 	keys := make([]time.Time, len(m))
 	i := 0
@@ -50,7 +52,7 @@ func sortKeys(m map[time.Time]int) []time.Time {
 	return keys
 }
 
-// Calculates the exact amount of time between two dates.
+// diff calculates the exact amount of time between two dates.
 // https://stackoverflow.com/a/36531443
 func diff(a, b time.Time) (year, month, day, hour, min, sec int) {
 	if a.Location() != b.Location() {
@@ -105,6 +107,27 @@ func monthsBetween(a, b time.Time) int {
 	return month
 }
 
+// incrementAfterDate increments all values in the map whose date key
+// lies on or after a given date.
+func incrementAfterDate(issues *map[time.Time]int, date time.Time) {
+	for key := range *issues {
+		if key.After(date) || key == date {
+			(*issues)[key]++
+		}
+	}
+}
+
+// decrementAfterDate decrements all values in the map whose date key
+// lies on or after a given date.
+func decrementAfterDate(issues *map[time.Time]int, date time.Time) {
+	for key := range *issues {
+		if key.After(date) || key == date {
+			(*issues)[key]--
+		}
+	}
+}
+
+// getLastDate finds the (chronologically) last date in a map.
 func getLastDate(data map[time.Time]int) time.Time {
 	var lastDate time.Time
 	first := true
@@ -119,7 +142,23 @@ func getLastDate(data map[time.Time]int) time.Time {
 	return lastDate
 }
 
-// Gets all issues (open and closed) in a repository.
+// getFirstDate finds the (chronologically) first date in a map.
+func getFirstDate(data map[time.Time]int) time.Time {
+	var firstDate time.Time
+	first := true
+	for date := range data {
+		if first {
+			firstDate = date
+			first = false
+		} else if date.Before(firstDate) {
+			firstDate = date
+		}
+	}
+	return firstDate
+}
+
+// getAllIssues gets all issues (open and closed) on a github
+// repository.
 func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool) (issues []octokit.Issue) {
 	apsimURL := octokit.Hyperlink("repos/{owner}/{repo}/issues?state={state}")
 	first := true
@@ -158,8 +197,8 @@ func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool)
 	return
 }
 
-// getAllPullRequests uses the github api to fetch all pull requests
-// (open and closed) on a given repo.
+// getAllPullRequests gets all pull requests (open and closed) on a
+// github repository.
 func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress bool) []octokit.PullRequest {
 	var pulls []octokit.PullRequest
 	apsimURL := octokit.Hyperlink("repos/{owner}/{repo}/pulls?state=closed")
@@ -204,7 +243,8 @@ func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress
 	return pulls
 }
 
-// Gets all issues (open and closed) in a repository.
+// getDataFromGithub gets all issues and pull requests on a github
+// repository by calling the github API.
 func getDataFromGithub(client *octokit.Client, owner, repo string, showProgress bool) (issues []octokit.Issue, pulls []octokit.PullRequest) {
 	// TODO : combine these methods.
 	issues = getAllIssues(client, owner, repo, showProgress)
@@ -212,8 +252,8 @@ func getDataFromGithub(client *octokit.Client, owner, repo string, showProgress 
 	return
 }
 
-// Gets all data. Will attempt use the cache if the useCache global is
-// set to true. Will call the github api otherwise.
+// getData gets all data. Will attempt use the cache if the useCache
+// global is set to true. Will get the data from github otherwise.
 func getData(client *octokit.Client) ([]octokit.Issue, []octokit.PullRequest) {
 	// Only use cache if cache files are available.
 	if useCache && fileExists(issuesCache) && fileExists(pullsCache) {
@@ -230,7 +270,7 @@ func getData(client *octokit.Client) ([]octokit.Issue, []octokit.PullRequest) {
 	return issues, pulls
 }
 
-// Checks if a file exists
+// fileExists checks if a file exists
 func fileExists(fileName string) bool {
 	if _, err := os.Stat(fileName); err == nil {
 		return true
@@ -241,6 +281,8 @@ func fileExists(fileName string) bool {
 	}
 }
 
+// filterIssues returns a deep clone of a slice of issues, filtered on
+// a given predicate.
 func filterIssues(issues []octokit.Issue, condition func(octokit.Issue) bool) []octokit.Issue {
 	var result []octokit.Issue
 

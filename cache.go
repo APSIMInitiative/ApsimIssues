@@ -7,7 +7,8 @@ import (
 	"github.com/octokit/go-octokit/octokit"
 )
 
-// Serialises the array of issues and writes them to a cache file.
+// writeIssuesToCache serialises an array of issues and writes them to
+// a json text file.
 func writeIssuesToCache(fileName string, issues []octokit.Issue) {
 	f, err := os.Create(fileName)
 	if err != nil {
@@ -18,7 +19,8 @@ func writeIssuesToCache(fileName string, issues []octokit.Issue) {
 	encoder.Encode(issues)
 }
 
-// Serialises the array of issues and writes them to a cache file.
+// writeToCache serialises the array of pull requests and writes them
+// to a json text file.
 func writeToCache(fileName string, data []octokit.PullRequest) {
 	f, err := os.Create(fileName)
 	if err != nil {
@@ -29,7 +31,8 @@ func writeToCache(fileName string, data []octokit.PullRequest) {
 	encoder.Encode(data)
 }
 
-// Reads an array of octokit issues from a json text file.
+// issuesFromCache reads an array of octokit issues from a json text
+// file.
 func issuesFromCache(fileName string) []octokit.Issue {
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -57,7 +60,8 @@ func issuesFromCache(fileName string) []octokit.Issue {
 	return issues
 }
 
-// Reads an array of pull requests from a json text file.
+// pullsFromCache reads an array of pull requests from a json text
+// file.
 func pullsFromCache(fileName string) []octokit.PullRequest {
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -85,6 +89,7 @@ func pullsFromCache(fileName string) []octokit.PullRequest {
 	return pulls
 }
 
+// getDataFromCache gets all issues and pull requests from the cache.
 func getDataFromCache(issuesCache, pullsCache string) ([]octokit.Issue, []octokit.PullRequest) {
 	return issuesFromCache(issuesCache), pullsFromCache(pullsCache)
 }
