@@ -105,6 +105,20 @@ func monthsBetween(a, b time.Time) int {
 	return month
 }
 
+func getLastDate(data map[time.Time]int) time.Time {
+	var lastDate time.Time
+	first := true
+	for date := range data {
+		if first {
+			lastDate = date
+			first = false
+		} else if date.After(lastDate) {
+			lastDate = date
+		}
+	}
+	return lastDate
+}
+
 // Gets all issues (open and closed) in a repository.
 func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool) (issues []octokit.Issue) {
 	apsimURL := octokit.Hyperlink("repos/{owner}/{repo}/issues?state={state}")
@@ -225,4 +239,16 @@ func fileExists(fileName string) bool {
 	} else {
 		panic(fmt.Sprintf("Error: Unable to determine if file '%s' exists", fileName))
 	}
+}
+
+func filterIssues(issues []octokit.Issue, condition func(octokit.Issue) bool) []octokit.Issue {
+	var result []octokit.Issue
+
+	for _, issue := range issues {
+		if condition(issue) {
+			result = append(result, issue)
+		}
+	}
+
+	return result
 }

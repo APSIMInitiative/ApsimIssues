@@ -17,12 +17,35 @@ func pullsByUser(username string, allPulls []octokit.PullRequest) []pullRequest 
 	return pulls
 }
 
+func pullsGroupedByUser(allPulls []octokit.PullRequest) (result map[string][]pullRequest) {
+	result = make(map[string][]pullRequest)
+	for _, pull := range allPulls {
+		result[pull.User.Login] = append(result[pull.User.Login], newPull(pull))
+	}
+	return
+}
+
 func numIssuedResolved(pulls []pullRequest) int {
 	n := 0
 	for _, pull := range pulls {
 		n += len(pull.referencedIssues)
 	}
 	return n
+}
+
+func getCumIssuesByDate(pulls []pullRequest) map[time.Time]int {
+	issues := make(map[time.Time]int)
+	for _, pull := range pulls {
+		if pull.pull.ClosedAt != nil {
+			issues[*pull.pull.ClosedAt] = 0
+		}
+	}
+	for _, pull := range pulls {
+		if pull.pull.ClosedAt != nil {
+			incrementAfterDate(&issues, *pull.pull.ClosedAt)
+		}
+	}
+	return issues
 }
 
 func getIssuesByDate(pulls []pullRequest) map[time.Time]int {
@@ -35,7 +58,7 @@ func getIssuesByDate(pulls []pullRequest) map[time.Time]int {
 	return issues
 }
 
-func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName string) {
+func getBugFixRate(allPulls []octokit.PullRequest, username string) ([]time.Time, []int) {
 	// Filter out pull requests not created by the user.
 	pulls := pullsByUser(username, allPulls)
 
@@ -54,6 +77,11 @@ func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName str
 		sum += issuesByDate[date]
 		cumIssues = append(cumIssues, sum)
 	}
+	return dates, cumIssues
+}
+
+func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName string) {
+	dates, cumIssues := getBugFixRate(allPulls, username)
 	title := fmt.Sprintf("Cumulative bugs fixed over time by %s", username)
 
 	data := series{
@@ -69,5 +97,7 @@ func graphBugFixRate(allPulls []octokit.PullRequest, username, graphFileName str
 		graphFileName,
 		data)
 	fmt.Printf("Generated graph '%s'\n", graphFileName)
-	fmt.Printf("%s has resolved %d issues.\n", username, numIssuedResolved(pulls))
+	if cumIssues != nil && len(cumIssues) > 0 {
+		fmt.Printf("%s has resolved %d issues.\n", username, cumIssues[len(cumIssues)-1])
+	}
 }

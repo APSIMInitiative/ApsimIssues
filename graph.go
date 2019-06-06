@@ -30,8 +30,12 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 
 	p.Y.Label.Text = ylabel
 	p.Y.Label.Font.Size = 20
+
 	p.Legend.Font.Size = 24
 	p.Legend.ThumbnailWidth = 24
+	p.Legend.Top = true
+	p.Legend.Left = true
+
 	colours := palette.Rainbow(len(data)+1, 0, 1, 1, 1, 1).Colors()
 
 	for i := 0; i < len(data); i++ {
