@@ -52,6 +52,17 @@ func sortKeys(m map[time.Time]int) []time.Time {
 	return keys
 }
 
+// indexOf searches a slice of dates for a certain date. Returns the
+// index of the item in the slice, or -1 if not found.
+func indexOf(dates []time.Time, date time.Time) int {
+	for i, dt := range dates {
+		if date.Year() == dt.Year() && date.YearDay() == dt.YearDay() {
+			return i
+		}
+	}
+	return -1
+}
+
 // diff calculates the exact amount of time between two dates.
 // https://stackoverflow.com/a/36531443
 func diff(a, b time.Time) (year, month, day, hour, min, sec int) {
@@ -190,7 +201,7 @@ func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool)
 			}
 			if showProgress {
 				percentDone := 100.0 * float64(numIssues-issue.Number) / float64(numIssues)
-				fmt.Printf("Fetching issues: %.2f%%...\r", percentDone)
+				fmt.Printf("\rFetching issues: %.2f%%...", percentDone)
 			}
 			if issue.PullRequest.HTMLURL == "" {
 				issues = append(issues, issue)

@@ -12,10 +12,12 @@ const (
 	repo  = "ApsimX"
 )
 
-var quiet = false
-var issuesCache = ".issues.cache"
-var pullsCache = ".pulls.cache"
-var useCache = true // Change to false for release!!!
+var (
+	quiet       = false
+	issuesCache = ".issues.cache"
+	pullsCache  = ".pulls.cache"
+	useCache    = true // Change to false for release!!!
+)
 
 func main() {
 	// We expect the user to pass in a username as a command line argument.
@@ -52,7 +54,7 @@ func main() {
 	// Graphs
 	graphBugFixRate(pullRequests, username, "bugs.png")
 	graphIssuesByDate(issues, "openIssues.png")
-	//graphOpenedVsClosed(issues, "openedVsClosed.png")
+	graphOpenedVsClosed(issues, "openedVsClosed.png")
 	graphOpenedVsClosedForUser(issues, pullRequests, username, "closedByUser.png")
 	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", username, "zur003", "hol353")
 	graphBugfixRateByUser(issues, pullRequests, "fixersComparison.png", 100)

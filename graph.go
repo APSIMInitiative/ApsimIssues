@@ -22,9 +22,12 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	p.Title.Font.Size = 32
 	p.X.Label.Text = xlabel
 	p.X.Label.Font.Size = 20
-	p.X.Tick.Marker = plot.TimeTicks{
-		Format: "Jan 2006",
-		Ticker: TimeTicker{},
+
+	if _, ok := data[0].(dateSeries); ok {
+		p.X.Tick.Marker = plot.TimeTicks{
+			Format: "Jan 2006",
+			Ticker: TimeTicker{},
+		}
 	}
 	p.X.Tick.Label.Font.Size = 20
 	p.Y.Tick.Label.Font.Size = 20
@@ -43,7 +46,7 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 		line, err := plotter.NewLine(data[i].getXYPairs())
 		if len(data) > 1 {
 			line.LineStyle.Color = colours[i]
-			p.Legend.Add(data[i].Name, line)
+			p.Legend.Add(data[i].getName(), line)
 		}
 		if err != nil {
 			panic(err)

@@ -50,13 +50,19 @@ func graphOpenedVsClosed(issues []octokit.Issue, graphFileName string) {
 	closed := seriesFromMap("Total issues closed",
 		getCumIssuesClosedByDate(issues))
 
+	openedVsClosed := createIntSeries(opened, closed, "Issues open/close rate")
+	oneToOneLine := intSeries{
+		X:    openedVsClosed.X,
+		Y:    openedVsClosed.X,
+		Name: "1:1 line",
+	}
 	createLinePlot(
 		"Total issues opened and closed over time",
-		"Date",
-		"Number of open bugs",
+		"Total Issues Opened",
+		"Total Issues Closed",
 		graphFileName,
-		opened,
-		closed)
+		openedVsClosed,
+		oneToOneLine)
 }
 
 // graphOpenedVsClosed graphs three series:
