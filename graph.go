@@ -59,7 +59,7 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	if err != nil {
 		panic(err)
 	}
-	if !quiet {
+	if !settings.Quiet {
 		fmt.Printf("Generated graph '%s'\n", fileName)
 	}
 }

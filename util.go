@@ -52,11 +52,22 @@ func sortKeys(m map[time.Time]int) []time.Time {
 	return keys
 }
 
+// indexOf searches a slice for a certain item and returns its index,
+// or -1 if not found.
+func indexOfString(arr []string, item string) int {
+	for i, str := range arr {
+		if str == item {
+			return i
+		}
+	}
+	return -1
+}
+
 // indexOf searches a slice of dates for a certain date. Returns the
 // index of the item in the slice, or -1 if not found.
 func indexOf(dates []time.Time, date time.Time) int {
 	for i, dt := range dates {
-		if date.Year() == dt.Year() && date.YearDay() == dt.YearDay() {
+		if sameDay(date, dt) {
 			return i
 		}
 	}
@@ -110,6 +121,11 @@ func diff(a, b time.Time) (year, month, day, hour, min, sec int) {
 	}
 
 	return
+}
+
+// sameDay returns true iff two time objects represent the same day.
+func sameDay(d1, d2 time.Time) bool {
+	return d1.Year() == d2.Year() && d1.YearDay() == d2.YearDay()
 }
 
 // monthsBetween calculates the number of months between two dates.
@@ -277,12 +293,12 @@ func getDataFromGithub(client *octokit.Client, owner, repo string, showProgress 
 // global is set to true. Will get the data from github otherwise.
 func getData(client *octokit.Client) ([]octokit.Issue, []octokit.PullRequest) {
 	// Only use cache if cache files are available.
-	if useCache && fileExists(issuesCache) && fileExists(pullsCache) {
+	if settings.UseCache && fileExists(issuesCache) && fileExists(pullsCache) {
 		fmt.Println("Fetching data from cache. This data is not live...")
 		return getDataFromCache(issuesCache, pullsCache)
 	}
 	// Only show progress if not in quiet mode.
-	issues, pulls := getDataFromGithub(client, owner, repo, !quiet)
+	issues, pulls := getDataFromGithub(client, owner, repo, !settings.Quiet)
 
 	// Update cache for next time.
 	writeToCache(pullsCache, pulls)

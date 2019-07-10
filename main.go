@@ -2,38 +2,33 @@ package main
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/octokit/go-octokit/octokit"
 )
 
 const (
-	owner = "APSIMInitiative"
-	repo  = "ApsimX"
+	owner       = "APSIMInitiative"
+	repo        = "ApsimX"
+	issuesCache = ".issues.cache"
+	pullsCache  = ".pulls.cache"
 )
 
 var (
-	quiet       = false
-	issuesCache = ".issues.cache"
-	pullsCache  = ".pulls.cache"
-	useCache    = true // Change to false for release!!!
+	settings options
 )
 
 func main() {
-	// We expect the user to pass in a username as a command line argument.
-	var username string
-	args := os.Args
-	if len(args) < 2 {
-		fmt.Println("No username received as command line argument. Defaulting to hol430...")
-		username = "hol430"
-	} else {
-		username = args[1]
-		fmt.Printf("username=%s\n", username)
-	}
-	if len(args) > 2 {
-		if args[2] == "-q" {
-			quiet = true
+	args, err := flags.Parse(&settings)
+	if err != nil {
+		if flags.WroteHelp(err) {
+			return
 		}
+		panic(err)
+	}
+	if len(args) > 0 {
+		// If there are any leftover unrecognised arguments, throw a fatal
+		panic(fmt.Sprintf("Error: unrecognised arguments: %v", args))
 	}
 
 	auth := getAuth("credentials.dat")
@@ -41,22 +36,27 @@ func main() {
 	issues, pullRequests := getData(client)
 
 	// Diagnostics
-	if !quiet {
-		fmt.Printf("Owner:                      %s\n", owner)
-		fmt.Printf("Repo:                       %s\n", repo)
-		fmt.Printf("User:                       %s\n\n", username)
+	if !settings.Quiet {
+		fmt.Printf("Owner:                      			%s\n", owner)
+		fmt.Printf("Repo:                       			%s\n", repo)
+		fmt.Printf("User:                       			%s\n\n", settings.Username)
 	}
-	fmt.Printf("Number of open issues:          %d\n", getNumOpenIssues(issues))
-	fmt.Printf("Number of closed issues:        %d\n", getNumClosedIssues(issues))
-	fmt.Printf("Number of open pull requests:   %d\n", getNumOpenPullRequests(pullRequests))
-	fmt.Printf("Number of closed pull requests: %d\n\n", getNumClosedPullRequests(pullRequests))
+
+	fmt.Printf("Number of open issues:          			%d\n", getNumOpenIssues(issues))
+	fmt.Printf("Number of closed issues:        			%d\n", getNumClosedIssues(issues))
+	fmt.Printf("Number of open pull requests:   			%d\n", getNumOpenPullRequests(pullRequests))
+	fmt.Printf("Number of closed pull requests: 			%d\n", getNumClosedPullRequests(pullRequests))
+
+	since := settings.Since()
+	fmt.Printf("Number of bugs closed since %s:  		%d\n", since.Format("2/1/2006"), bugsFixedSince(issues, since))
+	fmt.Printf("Number of issues closed since %s: 		%d\n\n", since.Format("2/1/2006"), issuesFixedSince(issues, since))
 
 	// Graphs
-	graphBugFixRate(pullRequests, username, "bugs.png")
+	graphBugFixRate(pullRequests, settings.Username, "bugs.png")
 	graphIssuesByDate(issues, "openIssues.png")
 	graphOpenedVsClosed(issues, "openedVsClosed.png")
-	graphOpenedVsClosedForUser(issues, pullRequests, username, "closedByUser.png")
-	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", username, "zur003", "hol353")
+	graphOpenedVsClosedForUser(issues, pullRequests, settings.Username, "closedByUser.png")
+	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", settings.Username, "zur003", "hol353")
 	graphBugfixRateByUser(issues, pullRequests, "fixersComparison.png", 100)
 	graphBugfixRateByUser(issues, pullRequests, "allfixersComparison.png", -1)
 

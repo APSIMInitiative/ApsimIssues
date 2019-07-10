@@ -167,3 +167,26 @@ func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
 	}
 	return closed
 }
+
+func isBug(issue octokit.Issue) bool {
+	var labels []string
+	for _, label := range issue.Labels {
+		labels = append(labels, label.Name)
+	}
+
+	return indexOfString(labels, "bug") >= 0
+}
+
+// bugsFixedSince returns the number of bugs (issues with the label 'bug') fixed since a given date
+func bugsFixedSince(issues []octokit.Issue, date time.Time) int {
+	return len(filterIssues(issues, func(issue octokit.Issue) bool {
+		return isBug(issue) && issue.ClosedAt != nil && (issue.ClosedAt.After(date) || sameDay(*issue.ClosedAt, date))
+	}))
+}
+
+// issuesFixedSince returns the number of issues fixed since a given date
+func issuesFixedSince(issues []octokit.Issue, date time.Time) int {
+	return len(filterIssues(issues, func(issue octokit.Issue) bool {
+		return issue.ClosedAt != nil && (issue.ClosedAt.After(date) || sameDay(*issue.ClosedAt, date))
+	}))
+}
