@@ -7,6 +7,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/palette"
 	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
 
 // Creates a scatter plot with the given parameters
@@ -18,24 +19,31 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	if err != nil {
 		panic(err)
 	}
-	p.Title.Text = title
-	p.Title.Font.Size = 32
-	p.X.Label.Text = xlabel
-	p.X.Label.Font.Size = 20
 
+	var baseFontSize vg.Length = 36
+
+	// Title formatting
+	p.Title.Text = title
+	p.Title.Font.Size = 48
+
+	// x-axis formatting
+	p.X.Label.Text = xlabel
+	p.X.Label.Font.Size = baseFontSize
 	if _, ok := data[0].(dateSeries); ok {
 		p.X.Tick.Marker = plot.TimeTicks{
 			Format: "Jan 2006",
 			Ticker: TimeTicker{},
 		}
 	}
-	p.X.Tick.Label.Font.Size = 20
-	p.Y.Tick.Label.Font.Size = 20
+	p.X.Tick.Label.Font.Size = baseFontSize
+	p.Y.Tick.Label.Font.Size = baseFontSize
 
+	// y-axis formatting
 	p.Y.Label.Text = ylabel
-	p.Y.Label.Font.Size = 20
+	p.Y.Label.Font.Size = 42
 
-	p.Legend.Font.Size = 24
+	// Legend formatting
+	p.Legend.Font.Size = baseFontSize
 	p.Legend.ThumbnailWidth = 24
 	p.Legend.Top = true
 	p.Legend.Left = true
@@ -44,6 +52,7 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 
 	for i := 0; i < len(data); i++ {
 		line, err := plotter.NewLine(data[i].getXYPairs())
+		line.LineStyle.Width = 2
 		if len(data) > 1 {
 			line.LineStyle.Color = colours[i]
 			p.Legend.Add(data[i].getName(), line)
@@ -73,13 +82,14 @@ func (T TimeTicker) Ticks(min, max float64) (ticks []plot.Tick) {
 	totalMonths := months + years*12
 	// We want to show up to a maximum of 20 ticks on the x axis.
 	var increment int
-	if totalMonths <= 20 {
+	maxNoTicks := 15
+	if totalMonths <= maxNoTicks {
 		increment = 1
-	} else if totalMonths/3 <= 20 {
+	} else if totalMonths/3 <= maxNoTicks {
 		increment = 3
-	} else if totalMonths/6 <= 20 {
+	} else if totalMonths/6 <= maxNoTicks {
 		increment = 6
-	} else if totalMonths/12 <= 20 {
+	} else if totalMonths/12 <= maxNoTicks {
 		increment = 12
 	} else {
 		// If we are plotting more than 20 years of data, just use the

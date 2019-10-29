@@ -331,3 +331,17 @@ func filterIssues(issues []octokit.Issue, condition func(octokit.Issue) bool) []
 
 	return result
 }
+
+// filterPullRequests returns a deep clone of a slice of pull requests,
+// filtered on a given predicate.
+func filterPullRequests(pulls []octokit.PullRequest, condition func(octokit.PullRequest) bool) []octokit.PullRequest {
+	var result []octokit.PullRequest
+
+	for _, pull := range pulls {
+		if condition(pull) {
+			result = append(result, pull)
+		}
+	}
+
+	return result
+}

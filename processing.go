@@ -149,7 +149,7 @@ func getCumOpenIssuesByDate(issues []octokit.Issue) map[time.Time]int {
 }
 
 // getCumIssuesClosedByDate gets a map of dates to the number of closed
-// issuse on that date.
+// issues on that date.
 func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
 	closed := make(map[time.Time]int)
 	// Initialise the map with value for each date set to 0.
@@ -168,6 +168,8 @@ func getCumIssuesClosedByDate(issues []octokit.Issue) map[time.Time]int {
 	return closed
 }
 
+// isBug checks if an issue is a bug
+// todo - refactor
 func isBug(issue octokit.Issue) bool {
 	var labels []string
 	for _, label := range issue.Labels {
@@ -175,6 +177,45 @@ func isBug(issue octokit.Issue) bool {
 	}
 
 	return indexOfString(labels, "bug") >= 0
+}
+
+// hasLabel checks if an issue has a given label.
+func hasLabel(issue octokit.Issue, label string) bool {
+	for _, label := range issue.Labels {
+		if label.Name == settings.LabelFilter {
+			return true
+		}
+	}
+	return false
+}
+
+// issuesWithLabel takes a list of issues and returns those issues with a given label.
+func issuesWithLabel(issues []octokit.Issue, label string) []octokit.Issue {
+	return filterIssues(issues, func(issue octokit.Issue) bool {
+		return hasLabel(issue, label)
+	})
+}
+
+func getIssueWithID(issues []octokit.Issue, id int) *octokit.Issue {
+	for _, issue := range issues {
+		if issue.Number == id {
+			return &issue
+		}
+	}
+	return nil
+}
+
+func pullsWithLabel(pulls []octokit.PullRequest, issues []octokit.Issue, label string) []octokit.PullRequest {
+	return filterPullRequests(pulls, func(pull octokit.PullRequest) bool {
+		pullRequest := newPull(pull)
+		for _, issueID := range pullRequest.referencedIssues {
+			issue := getIssueWithID(issues, issueID)
+			if issue != nil && hasLabel(*issue, label) {
+				return true
+			}
+		}
+		return false
+	})
 }
 
 // bugsFixedSince returns the number of bugs (issues with the label 'bug') fixed since a given date

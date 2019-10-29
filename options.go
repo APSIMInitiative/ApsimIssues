@@ -4,11 +4,12 @@ import "time"
 
 // options provides a class to store command line arguments.
 type options struct {
-	Username string `short:"u" default:"hol430" long:"username" description:"github username"`
-	Date     string `short:"s" long:"since" default:"1/1/1970" description:"Only show data after this date"`
-	Quiet    bool   `short:"q" long:"quiet" description:"Suppress progress reporting"`
-	UseCache bool   `short:"c" long:"use-cache" description:"Use cache - do not fetch live data"`
-	DryRun   bool   `short:"d" long:"dry-run" description:"Update cache with live data and immediately exit"`
+	Username    string `short:"u" default:"hol430" long:"username" description:"github username"`
+	Date        string `short:"s" long:"since" default:"1/1/1970" description:"Only show data after this date"`
+	Quiet       bool   `short:"q" long:"quiet" description:"Suppress progress reporting"`
+	UseCache    bool   `short:"c" long:"use-cache" description:"Use cache - do not fetch live data"`
+	DryRun      bool   `short:"d" long:"dry-run" description:"Update cache with live data and immediately exit"`
+	LabelFilter string `short:"l" long:"label" description:"Only process issues with a given label"`
 }
 
 // sinceDate returns the 'since' option passed by the user. Defaults to
