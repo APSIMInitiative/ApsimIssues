@@ -54,6 +54,16 @@ func getNumClosedPullRequests(pulls []octokit.PullRequest) int {
 	return sum
 }
 
+func getNumIssuesOpenedBy(issues []octokit.Issue, user string) int {
+	var sum int
+	for _, issue := range issues {
+		if issue.User.Login == user {
+			sum++
+		}
+	}
+	return sum
+}
+
 // pullsByUser takes an array of pull requests and a username, and
 // returns all pull requests created by that user.
 func pullsByUser(username string, allPulls []octokit.PullRequest) []pullRequest {
@@ -91,6 +101,16 @@ func getCumIssuesByDate(pulls []pullRequest) map[time.Time]int {
 		}
 	}
 	return issues
+}
+
+// issuesFixedByStaleBot returns all issues which were fixed by StaleBot.
+func issuesFixedByStaleBot(issues []octokit.Issue) []octokit.Issue {
+	closedIssues := filterIssues(issues, func(i octokit.Issue) bool {
+		return i.ClosedAt != nil
+	})
+	return filterIssues(closedIssues, func(i octokit.Issue) bool {
+		return issueHasLabel(i, "stale")
+	})
 }
 
 // getIssuesByDate takes an array of pull requests and returns a map of
@@ -179,10 +199,30 @@ func isBug(issue octokit.Issue) bool {
 	return indexOfString(labels, "bug") >= 0
 }
 
+// isOpen checks if an issue is open
+func isOpen(issue octokit.Issue) bool {
+	return issue.ClosedAt == nil
+}
+
+// isClosed checks if an issue is closed
+func isClosed(issue octokit.Issue) bool {
+	return !isOpen(issue)
+}
+
 // hasLabel checks if an issue has a given label.
 func hasLabel(issue octokit.Issue, label string) bool {
 	for _, label := range issue.Labels {
 		if label.Name == settings.LabelFilter {
+			return true
+		}
+	}
+	return false
+}
+
+// hasLabel checks if an issue has a given label.
+func issueHasLabel(issue octokit.Issue, label string) bool {
+	for _, lbl := range issue.Labels {
+		if lbl.Name == label {
 			return true
 		}
 	}
@@ -230,4 +270,13 @@ func issuesFixedSince(issues []octokit.Issue, date time.Time) int {
 	return len(filterIssues(issues, func(issue octokit.Issue) bool {
 		return issue.ClosedAt != nil && (issue.ClosedAt.After(date) || sameDay(*issue.ClosedAt, date))
 	}))
+}
+
+// get all issues grouped by the user who created the issues.
+func getIssuesGroupedByAuthor(issues []octokit.Issue) map[string][]octokit.Issue {
+	groups := make(map[string][]octokit.Issue)
+	for _, issue := range issues {
+		groups[issue.User.Login] = append(groups[issue.User.Login], issue)
+	}
+	return groups
 }

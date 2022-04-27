@@ -229,7 +229,7 @@ func getAllIssues(client *octokit.Client, owner, repo string, showProgress bool)
 		apsimURL = *result.NextPage
 	}
 	if showProgress {
-		fmt.Printf("Fetching issues: 100.00%%...\n")
+		fmt.Printf("\rFetching issues: 100.00%%...\n")
 	}
 	return
 }
@@ -264,7 +264,7 @@ func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress
 
 			if showProgress {
 				percentDone = 100.0 * float64(numPullRequests-pull.Number) / float64(numPullRequests)
-				fmt.Printf("Fetching pull requests: %.2f%%...\r", percentDone)
+				fmt.Printf("\rFetching pull requests: %.2f%%...", percentDone)
 			}
 
 			pulls = append(pulls, pull)
@@ -275,7 +275,7 @@ func getAllPullRequests(client *octokit.Client, owner, repo string, showProgress
 		apsimURL = *result.NextPage
 	}
 	if showProgress {
-		fmt.Printf("Fetching pull requests: 100.00%%...\n")
+		fmt.Printf("\rFetching pull requests: 100.00%%...\n")
 	}
 	return pulls
 }
@@ -340,6 +340,36 @@ func filterPullRequests(pulls []octokit.PullRequest, condition func(octokit.Pull
 	for _, pull := range pulls {
 		if condition(pull) {
 			result = append(result, pull)
+		}
+	}
+
+	return result
+}
+
+// filterIssueGropu returns a deep clone of a map of strings to an array of issues.
+// The returned object contains only those key/value pairs which satisfy a condition.
+func filterIssueGroup(issues map[string][]octokit.Issue, condition func([]octokit.Issue) bool) map[string][]octokit.Issue {
+	result := make(map[string][]octokit.Issue)
+
+	for key, val := range issues {
+		if condition(val) {
+			result[key] = val
+		}
+	}
+
+	return result
+}
+
+// filterIssueGropu returns a deep clone of a map of strings to an array of issues.
+// The returned object contains only those key/value pairs which satisfy a condition.
+func filterIssueGroupIssues(issues map[string][]octokit.Issue, condition func(octokit.Issue) bool) map[string][]octokit.Issue {
+	result := make(map[string][]octokit.Issue)
+
+	for key, val := range issues {
+		for _, issue := range val {
+			if condition(issue) {
+				result[key] = append(result[key], issue)
+			}
 		}
 	}
 

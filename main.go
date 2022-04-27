@@ -21,9 +21,9 @@ var (
 func main() {
 	args, err := flags.Parse(&settings)
 	if err != nil {
-		if flags.WroteHelp(err) {
-			return
-		}
+		// if flags.WroteHelp(err) {
+		// 	return
+		// }
 		panic(err)
 	}
 	if len(args) > 0 {
@@ -54,8 +54,15 @@ func main() {
 	fmt.Printf("Number of closed issues:                    %d\n", getNumClosedIssues(issues))
 	fmt.Printf("Number of open pull requests:               %d\n", getNumOpenPullRequests(pullRequests))
 	fmt.Printf("Number of closed pull requests:             %d\n", getNumClosedPullRequests(pullRequests))
+	fmt.Printf("Number of issues opened by %s:              %d\n", settings.Username, getNumIssuesOpenedBy(issues, settings.Username))
 
 	since := settings.Since()
+	issues = filterIssues(issues, func(issue octokit.Issue) bool {
+		return issue.CreatedAt.After(since)
+	})
+	pullRequests = filterPullRequests(pullRequests, func(pull octokit.PullRequest) bool {
+		return pull.MergedAt != nil && pull.MergedAt.After(since)
+	})
 	fmt.Printf("Number of bugs closed since %s:             %d\n", since.Format("2/1/2006"), bugsFixedSince(issues, since))
 	fmt.Printf("Number of issues closed since %s:           %d\n\n", since.Format("2/1/2006"), issuesFixedSince(issues, since))
 
@@ -67,5 +74,6 @@ func main() {
 	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", settings.Username, "zur003", "hol353")
 	graphBugfixRateByUser(issues, pullRequests, "fixersComparisonByBugCount.png", 100)
 	graphBugfixRateByUser(issues, pullRequests, "allfixersComparison.png", -1)
+	graphIssuesOpenedByUser(issues, 50, "issuesOpenedByUser.png")
 
 }

@@ -138,6 +138,7 @@ func graphBugfixRateByUser(issues []octokit.Issue, pulls []octokit.PullRequest, 
 	// Get data for issues fixed for each user.
 	var userSeries []series
 	dataByUser := pullsGroupedByUser(pulls)
+
 	for user := range dataByUser {
 		// Generate a map of dates to number of issues referenced in pull requests.
 		issuesByDate := getCumIssuesByDate(dataByUser[user])
@@ -149,6 +150,11 @@ func graphBugfixRateByUser(issues []octokit.Issue, pulls []octokit.PullRequest, 
 			userSeries = append(userSeries, seriesFromMap(seriesTitle, issuesByDate))
 		}
 	}
+
+	// Add a series for stale bot
+	fixedByStaleBot := issuesFixedByStaleBot(issues)
+	issuesByDate := getCumIssuesClosedByDate(fixedByStaleBot)
+	userSeries = append(userSeries, seriesFromMap("StaleBot", issuesByDate))
 
 	// Generate a map of cumulative issues opened and closed over time.
 	opened := seriesFromMap("Total issues opened",
@@ -165,4 +171,29 @@ func graphBugfixRateByUser(issues []octokit.Issue, pulls []octokit.PullRequest, 
 		"Number of bugs",
 		graphFileName,
 		userSeries...)
+}
+
+// Create a bar graph of users (x-axis) vs num issues opened by that user
+// (on the y-axis), for all useres who have fixed at least a certain number
+// of issues.
+func graphIssuesOpenedByUser(issues []octokit.Issue, issueThresholdPerUser int, graphFileName string) {
+	groups := getIssuesGroupedByAuthor(issues)
+	groups = filterIssueGroup(groups, func(issues []octokit.Issue) bool {
+		return len(issues) > issueThresholdPerUser
+	})
+
+	// Split into 2 series - opened and closed
+	open := filterIssueGroupIssues(groups, isOpen)
+	closed := filterIssueGroupIssues(groups, isClosed)
+
+	openSeries := barSeriesFromGroups("Open Issues", open)
+	closedSeries := barSeriesFromGroups("Closed Issues", closed)
+
+	createBarChart(
+		"Number of issues opened per user",
+		"Username",
+		"Number of issues opened",
+		graphFileName,
+		openSeries,
+		closedSeries)
 }
