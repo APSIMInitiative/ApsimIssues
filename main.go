@@ -21,9 +21,9 @@ var (
 func main() {
 	args, err := flags.Parse(&settings)
 	if err != nil {
-		// if flags.WroteHelp(err) {
-		// 	return
-		// }
+		if flags.WroteHelp(err) {
+			return
+		}
 		panic(err)
 	}
 	if len(args) > 0 {
@@ -70,10 +70,9 @@ func main() {
 	graphBugFixRate(pullRequests, settings.Username, "bugs.png")
 	graphIssuesByDate(issues, "openIssues.png")
 	graphOpenedVsClosed(issues, "openedVsClosed.png")
-	graphOpenedVsClosedForUser(issues, pullRequests, settings.Username, "closedByUser.png")
+    graphOpenedVsClosedForUser(issues, pullRequests, settings.Username, "closedByUser.png")
 	graphOpenedVsClosedForUsers(issues, pullRequests, "fixersComparison.png", settings.Username, "zur003", "hol353")
 	graphBugfixRateByUser(issues, pullRequests, "fixersComparisonByBugCount.png", 100)
 	graphBugfixRateByUser(issues, pullRequests, "allfixersComparison.png", -1)
 	graphIssuesOpenedByUser(issues, 50, "issuesOpenedByUser.png")
-
 }

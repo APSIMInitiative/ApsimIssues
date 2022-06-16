@@ -15,20 +15,17 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	if data == nil || len(data) < 1 {
 		panic("Graph error: No series provided")
 	}
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := plot.New()
 
 	var baseFontSize vg.Length = 36
 
 	// Title formatting
 	p.Title.Text = title
-	p.Title.Font.Size = 48
+	p.Title.TextStyle.Font.Size = 48
 
 	// x-axis formatting
 	p.X.Label.Text = xlabel
-	p.X.Label.Font.Size = baseFontSize
+	p.X.Label.TextStyle.Font.Size = baseFontSize
 	if _, ok := data[0].(dateSeries); ok {
 		p.X.Tick.Marker = plot.TimeTicks{
 			Format: "Jan 2006",
@@ -40,10 +37,10 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 
 	// y-axis formatting
 	p.Y.Label.Text = ylabel
-	p.Y.Label.Font.Size = 42
+	p.Y.Label.TextStyle.Font.Size = 42
 
 	// Legend formatting
-	p.Legend.Font.Size = baseFontSize
+	p.Legend.TextStyle.Font.Size = baseFontSize
 	p.Legend.ThumbnailWidth = 24
 	p.Legend.Top = true
 	p.Legend.Left = true
@@ -64,7 +61,7 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 	}
 
 	// Write to disk
-	err = p.Save(1920, 1080, fileName)
+	var err = p.Save(1920, 1080, fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -74,29 +71,26 @@ func createLinePlot(title, xlabel, ylabel, fileName string, data ...series) {
 }
 
 func createBarChart(title string, xAxisLabel string, yAxisLabel string, fileName string, data ...barSeries) {
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := plot.New()
 	var baseFontSize vg.Length = 36
 	var barLength vg.Length = 18
 
 	// Title formatting
 	p.Title.Text = title
-	p.Title.Font.Size = 48
+	p.Title.TextStyle.Font.Size = 48
 
 	// x-axis formatting
 	p.X.Label.Text = xAxisLabel
-	p.X.Label.Font.Size = baseFontSize
+	p.X.Label.TextStyle.Font.Size = baseFontSize
 	p.X.Tick.Label.Font.Size = baseFontSize
 	p.Y.Tick.Label.Font.Size = baseFontSize
 
 	// y-axis formatting
 	p.Y.Label.Text = yAxisLabel
-	p.Y.Label.Font.Size = 42
+	p.Y.Label.TextStyle.Font.Size = 42
 
 	// Legend formatting
-	p.Legend.Font.Size = baseFontSize
+	p.Legend.TextStyle.Font.Size = baseFontSize
 	p.Legend.ThumbnailWidth = 24
 	p.Legend.Top = true
 	p.Legend.Left = true
@@ -134,7 +128,7 @@ func createBarChart(title string, xAxisLabel string, yAxisLabel string, fileName
 	// }
 
 	// Write to disk
-	err = p.Save(2560, 1440, fileName)
+	var err = p.Save(2560, 1440, fileName)
 	if err != nil {
 		panic(err)
 	}
